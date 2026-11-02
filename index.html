@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدير الكتب المتقدم v1.8</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+</head>
+<body>
+
+<!-- ================== Sidebar ================== -->
+<div class="sidebar">
+    <div class="logo">
+        <i class="fa-solid fa-book"></i>
+        <h2 data-i18n="sidebarLogo">مدير الكتب</h2>
+    </div>
+
+    <ul>
+        <li class="active" data-filter="all"><i class="fa-solid fa-house"></i> <span data-i18n="navHome">الرئيسية</span></li>
+        <li data-filter="all"><i class="fa-solid fa-book-open"></i> <span data-i18n="navAllBooks">جميع الكتب</span></li>
+        <li data-filter="favorites"><i class="fa-solid fa-star"></i> <span data-i18n="navFavorites">المفضلة</span></li>
+        <li data-filter="finished"><i class="fa-solid fa-circle-check"></i> <span data-i18n="navFinished">مقروء</span></li>
+        <li data-filter="want-to-read"><i class="fa-solid fa-clock"></i> <span data-i18n="navWantToRead">أريد القراءة</span></li>
+    </ul>
+
+    <div class="custom-lists">
+        <h4><i class="fa-solid fa-list"></i> <span data-i18n="myLists">قوائمي</span></h4>
+        <div id="customListsContainer"></div>
+        <div class="add-list">
+            <input type="text" id="newListName" data-i18n="newListPlaceholder" placeholder="قائمة جديدة...">
+            <button id="addListBtn"><i class="fa-solid fa-plus"></i></button>
+        </div>
+    </div>
+
+    <div class="lang-switcher">
+        <h4><i class="fa-solid fa-globe"></i> <span data-i18n="langToggle">اللغة</span></h4>
+        <div class="lang-buttons">
+            <button id="langArBtn" class="lang-btn active" data-lang="ar">
+                🇸🇦 <span data-i18n="langAr">العربية</span>
+            </button>
+            <button id="langEnBtn" class="lang-btn" data-lang="en">
+                🇬🇧 <span data-i18n="langEn">English</span>
+            </button>
+            <button id="langRuBtn" class="lang-btn" data-lang="ru">
+                🇷🇺 <span data-i18n="langRu">Русский</span>
+            </button>
+            <button id="langZhBtn" class="lang-btn" data-lang="zh">
+                🇨🇳 <span data-i18n="langZh">中文</span>
+            </button>
+            <button id="langEsBtn" class="lang-btn" data-lang="es">
+                🇪🇸 <span data-i18n="langEs">Español</span>
+            </button>
+        </div>
+    </div>
+    <div class="theme-switcher">
+        <h4><i class="fa-solid fa-palette"></i> <span data-i18n="themeTitle">الثيمات</span></h4>
+        <div id="themeList" class="theme-list"></div>
+        <div class="theme-controls">
+            <button id="exportThemesBtn" class="theme-btn" title="تصدير الثيمات"><i class="fa-solid fa-file-export"></i></button>
+            <button id="importThemesBtn" class="theme-btn" title="استيراد الثيمات"><i class="fa-solid fa-file-import"></i></button>
+            <input type="file" id="importThemesInput" accept=".json" style="display:none;">
+            <button id="createThemeBtn" class="theme-btn create-theme" title="إضافة ثيم"><i class="fa-solid fa-plus"></i></button>
+        </div>
+    </div>
+</div>
+
+<!-- ================== Main ================== -->
+<div class="main">
+
+    <header>
+        <div>
+            <h1><i class="fa-solid fa-book"></i> <span data-i18n="library">مكتبتي</span></h1>
+            <div class="app-version">الإصدار v1.8</div>
+        </div>
+        <div class="search-box">
+            <input type="text" id="searchInput" data-i18n="searchPlaceholder" placeholder="بحث عن كتاب...">
+            <button id="searchBtn"><i class="fa-solid fa-search"></i></button>
+        </div>
+    </header>
+
+    <div id="loadingIndicator" class="loading-indicator" style="display:none;">
+        <i class="fa-solid fa-spinner fa-spin"></i><span data-i18n="loading"> جاري التحميل...</span>
+    </div>
+
+    <section class="stats">
+        <div class="card"><i class="fa-solid fa-book"></i><h2 id="booksCount">0</h2><p data-i18n="totalBooks">إجمالي الكتب</p></div>
+        <div class="card"><i class="fa-solid fa-star"></i><h2 id="favoriteCount">0</h2><p data-i18n="favorites">المفضلة</p></div>
+        <div class="card"><i class="fa-solid fa-check"></i><h2 id="readCount">0</h2><p data-i18n="read">مقروء</p></div>
+        <div class="card"><i class="fa-solid fa-clock"></i><h2 id="waitingCount">0</h2><p data-i18n="wantToRead">أريد القراءة</p></div>
+    </section>
+
+    <section class="add-book">
+        <h2 data-i18n="addBookSection">إضافة كتاب جديد</h2>
+        <form id="bookForm" onsubmit="return false;">
+            <input type="text" id="title" data-i18n="titleLabel" placeholder="عنوان الكتاب" required>
+            <input type="text" id="author" data-i18n="authorLabel" placeholder="المؤلف" required>
+            <input type="number" id="year" data-i18n="yearLabel" placeholder="سنة النشر">
+            <input type="number" id="pages" data-i18n="pagesLabel" placeholder="عدد الصفحات">
+            <input type="text" id="category" data-i18n="categoryLabel" placeholder="التصنيف">
+
+            <select id="status">
+                <option value="Want To Read">أريد القراءة</option>
+                <option value="Reading">أقرأ الآن</option>
+                <option value="Finished">انتهيت</option>
+            </select>
+
+            <select id="rating">
+                <option value="1">⭐</option>
+                <option value="2">⭐⭐</option>
+                <option value="3">⭐⭐⭐</option>
+                <option value="4">⭐⭐⭐⭐</option>
+                <option value="5" selected>⭐⭐⭐⭐⭐</option>
+            </select>
+
+            <select id="bookList">
+                <option value="">-- بدون قائمة --</option>
+            </select>
+
+            <textarea id="notes" data-i18n="notesLabel" placeholder="ملاحظات..."></textarea>
+
+            <div class="file-input-group">
+                <label><i class="fa-regular fa-image"></i> <span data-i18n="coverLabel">غلاف الكتاب</span></label>
+                <input type="file" id="cover" accept="image/*">
+            </div>
+
+            <div class="file-input-group">
+                <label><i class="fa-regular fa-file-pdf"></i> <span data-i18n="pdfLabel">ملف PDF</span></label>
+                <input type="file" id="pdfFile" accept=".pdf">
+            </div>
+
+            <button type="button" id="addBookBtn"><i class="fa-solid fa-plus"></i> <span data-i18n="addBookBtn">إضافة كتاب</span></button>
+        </form>
+    </section>
+
+    <!-- ================== قسم إدارة البيانات ================== -->
+    <section class="data-management">
+        <h2><i class="fa-solid fa-database"></i> <span data-i18n="dataManagement">إدارة البيانات</span></h2>
+        <div class="data-actions">
+            <button id="exportDataBtn" class="data-btn export-btn">
+                <i class="fa-solid fa-download"></i>
+                <span data-i18n="exportData">تصدير البيانات</span>
+                <small data-i18n="exportDataDesc">حفظ نسخة احتياطية</small>
+            </button>
+            <div class="import-wrapper">
+                <button id="importDataBtn" class="data-btn import-btn">
+                    <i class="fa-solid fa-upload"></i>
+                    <span data-i18n="importData">استيراد البيانات</span>
+                    <small data-i18n="importDataDesc">استعادة من نسخة سابقة</small>
+                </button>
+                <input type="file" id="importFileInput" accept=".json" style="display:none;">
+            </div>
+            <div class="data-info">
+                <p><i class="fa-regular fa-circle-info"></i> <span data-i18n="dataInfo">يمكنك تصدير جميع كتبك وقوائمك إلى ملف خارجي، واستيراده لاحقاً لاستعادة البيانات حتى لو تم حذف كاش المتصفح.</span></p>
+            </div>
+        </div>
+        <div id="lastBackupInfo" class="backup-info" style="display:none;">
+            <i class="fa-regular fa-calendar-check"></i>
+            <span data-i18n="lastBackup">آخر نسخة احتياطية:</span> <span id="lastBackupDate"></span>
+        </div>
+    </section>
+
+    <section class="books-section">
+        <h2 data-i18n="yourLibrary">مكتبتك</h2>
+        <div id="booksContainer" class="books-container"></div>
+    </section>
+
+</div>
+
+<!-- ================== Modal Edit ================== -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <h2><i class="fa-solid fa-pen-to-square"></i> <span data-i18n="editBook">تعديل الكتاب</span></h2>
+            
+            <div class="edit-cover-preview">
+                <label data-i18n="currentCover">الغلاف الحالي</label>
+                <img id="editCoverPreview" src="" alt="">
+                <p class="hint"><span data-i18n="changeCover">يمكنك تغيير الغلاف عن طريق رفع صورة جديدة</span></p>
+            </div>
+
+            <div class="file-input-group">
+                <label><i class="fa-regular fa-image"></i> <span data-i18n="changeCover">تغيير الغلاف</span></label>
+                <input type="file" id="editCover" accept="image/*">
+            </div>
+
+            <div class="file-input-group">
+                <label><i class="fa-regular fa-file-pdf"></i> <span data-i18n="changePdf">تغيير ملف PDF</span></label>
+                <input type="file" id="editPdfFile" accept=".pdf">
+                <p class="hint" id="currentPdfName" style="font-size:12px;color:#888;margin-top:4px;">الملف الحالي: لا يوجد</p>
+            </div>
+
+            <input type="text" id="editTitle" data-i18n="titleLabel" placeholder="عنوان الكتاب">
+            <input type="text" id="editAuthor" data-i18n="authorLabel" placeholder="المؤلف">
+            <input type="number" id="editYear" data-i18n="yearLabel" placeholder="سنة النشر">
+            <input type="number" id="editPages" data-i18n="pagesLabel" placeholder="عدد الصفحات">
+            <input type="text" id="editCategory" data-i18n="categoryLabel" placeholder="التصنيف">
+            
+            <select id="editStatus">
+                <option value="Want To Read">أريد القراءة</option>
+                <option value="Reading">أقرأ الآن</option>
+                <option value="Finished">انتهيت</option>
+            </select>
+
+            <div class="edit-rating">
+                <label data-i18n="ratingLabel">التقييم بالنجوم</label>
+                <div class="star-rating">
+                    <span class="star" data-value="1">☆</span>
+                    <span class="star" data-value="2">☆</span>
+                    <span class="star" data-value="3">☆</span>
+                    <span class="star" data-value="4">☆</span>
+                    <span class="star" data-value="5">☆</span>
+                </div>
+                <input type="hidden" id="editRating" value="1">
+            </div>
+
+            <textarea id="editNotes" data-i18n="notesLabel" placeholder="ملاحظات"></textarea>
+            
+            <div class="edit-actions">
+                <button id="saveEdit"><i class="fa-solid fa-check"></i> <span data-i18n="saveChanges">حفظ التغييرات</span></button>
+                <button id="cancelEdit"><i class="fa-solid fa-xmark"></i> <span data-i18n="cancel">إلغاء</span></button>
+            </div>
+    </div>
+</div>
+
+<!-- ================== Theme Modal ================== -->
+    <div class="modal" id="themeModal">
+        <div class="modal-content">
+            <h2><i class="fa-solid fa-palette"></i> <span data-i18n="createThemeTitle">إنشاء ثيم مخصص</span></h2>
+            <label for="themeName" data-i18n="themeName">اسم الثيم</label>
+            <input type="text" id="themeName" placeholder="مثال: رمادي فاتح" />
+
+            <div class="color-grid">
+                <div>
+                    <label data-i18n="themeMain">اللون الرئيسي</label>
+                    <input type="color" id="themeMain" value="#2563eb">
+                    <div class="color-preview" id="themeMainPreview" style="background:#2563eb;">#2563eb</div>
+                </div>
+                <div>
+                    <label data-i18n="themeBackground">لون الخلفية</label>
+                    <input type="color" id="themeBackground" value="#eef2f7">
+                    <div class="color-preview" id="themeBackgroundPreview" style="background:#eef2f7;">#eef2f7</div>
+                </div>
+                <div>
+                    <label data-i18n="themeSidebar">لون الشريط الجانبي</label>
+                    <input type="color" id="themeSidebar" value="#111827">
+                    <div class="color-preview" id="themeSidebarPreview" style="background:#111827;">#111827</div>
+                </div>
+                <div>
+                    <label data-i18n="themeText">لون النص</label>
+                    <input type="color" id="themeText" value="#1f2937">
+                    <div class="color-preview" id="themeTextPreview" style="background:#1f2937;">#1f2937</div>
+                </div>
+                <div>
+                    <label data-i18n="themeCard">لون بطاقات المحتوى</label>
+                    <input type="color" id="themeCard" value="#ffffff">
+                    <div class="color-preview" id="themeCardPreview" style="background:#ffffff;">#ffffff</div>
+                </div>
+            </div>
+
+            <div class="edit-actions" style="margin-top:16px;">
+                <button id="saveThemeBtn"><i class="fa-solid fa-check"></i> <span data-i18n="saveTheme">حفظ الثيم</span></button>
+                <button id="cancelThemeBtn"><i class="fa-solid fa-xmark"></i> <span data-i18n="cancel">إلغاء</span></button>
+            </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
